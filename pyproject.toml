@@ -8,3 +8,4 @@ requires-python = ">=3.12"
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q"
+markers = ["db: needs the P6 PostgreSQL container (skipped if unreachable)"]
