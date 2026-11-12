@@ -90,25 +90,37 @@ class PoliteFetcher:
                 self.sleep(remaining)
         self._last_request_at = self.clock()
 
-    def _request(self, url: str) -> requests.Response:
-        """GET with rate limit and retries. Returns any non-retryable response (including 4xx)."""
+    def _retrying(self, url: str, attempt: Callable[[], tuple[object, int]],
+                  retry_on: tuple[type[BaseException], ...] = (requests.Timeout, requests.ConnectionError)):
+        """Run `attempt` (returns (result, status)) with rate limit, retries and exponential backoff.
+
+        Retries on the given exceptions and on 429/5xx. Shared by the HTTP and browser fetchers.
+        """
         last_error: str = ""
-        for attempt in range(self.max_retries + 1):
+        for n in range(self.max_retries + 1):
             self._wait_for_rate_limit()
             try:
-                resp = self.session.get(url, timeout=self.timeout_seconds)
-            except (requests.Timeout, requests.ConnectionError) as exc:
-                last_error = f"{type(exc).__name__}: {exc}"
+                result, status = attempt()
+            except retry_on as exc:
+                last_error = f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}"
             else:
-                if resp.status_code not in RETRY_STATUSES:
-                    return resp
-                last_error = f"HTTP {resp.status_code}"
-            if attempt < self.max_retries:
-                wait = self.backoff_seconds * (2 ** attempt)
+                if status not in RETRY_STATUSES:
+                    return result, status
+                last_error = f"HTTP {status}"
+            if n < self.max_retries:
+                wait = self.backoff_seconds * (2 ** n)
                 log.warning("GET %s failed (%s); retry %d/%d in %.1fs",
-                            url, last_error, attempt + 1, self.max_retries, wait)
+                            url, last_error, n + 1, self.max_retries, wait)
                 self.sleep(wait)
         raise FetchError(f"GET {url} failed after {self.max_retries + 1} attempts: {last_error}")
+
+    def _request(self, url: str) -> requests.Response:
+        """GET with rate limit and retries. Returns any non-retryable response (including 4xx)."""
+        def attempt():
+            resp = self.session.get(url, timeout=self.timeout_seconds)
+            return resp, resp.status_code
+        resp, _ = self._retrying(url, attempt)
+        return resp
 
     def get_html(self, url: str) -> str:
         """Fetch a page politely. Raises RobotsDisallowed, or FetchError on failure or non-200."""
