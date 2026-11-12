@@ -9,7 +9,7 @@ import pytest
 
 from scraper.http import FetchError, RobotsDisallowed
 from scraper.quotes_js import (BrowserFetcher, RawQuote, clean_quotes, parse_quotes_page, scrape_quotes)
-from tests.conftest import make_response
+from tests.conftest import make_response, missing
 
 FX = Path(__file__).parent / "fixtures" / "quotes"
 P1 = "https://quotes.toscrape.com/js/"
@@ -151,7 +151,7 @@ def _chromium_available() -> bool:
 @pytest.mark.browser
 def test_real_browser_renders_saved_raw_page_offline():
     if not _chromium_available():
-        pytest.skip("Playwright Chromium not installed")
+        missing("Playwright Chromium not installed", "REQUIRE_BROWSER")
     from playwright.sync_api import sync_playwright
     raw, jq = read("js_page1_raw.html"), (FX / "jquery.js").read_bytes()
     with sync_playwright() as p:

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,16 @@ def fixture_html(fixture_bytes):
 TEST_DB = "scraper_test"
 
 
+def missing(reason: str, require_var: str) -> None:
+    """Skip locally, but FAIL when CI demands the dependency (e.g. REQUIRE_DB=1).
+
+    This way CI can never go green by silently skipping the DB or browser tests.
+    """
+    if os.environ.get(require_var) == "1":
+        pytest.fail(f"{reason} ({require_var}=1, so this is a failure, not a skip)", pytrace=False)
+    pytest.skip(reason)
+
+
 @pytest.fixture
 def pg_conn():
     import psycopg
@@ -45,7 +56,7 @@ def pg_conn():
     try:
         admin = db.connect(settings)
     except Exception as exc:  # noqa: BLE001
-        pytest.skip(f"PostgreSQL not reachable: {exc}")
+        missing(f"PostgreSQL not reachable: {exc}", "REQUIRE_DB")
     admin.autocommit = True
     if not admin.execute("SELECT 1 FROM pg_database WHERE datname = %s", (TEST_DB,)).fetchone():
         admin.execute(f'CREATE DATABASE "{TEST_DB}"')

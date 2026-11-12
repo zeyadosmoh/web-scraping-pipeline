@@ -66,8 +66,12 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Throwaway DB password (the app requires one; trust auth ignores it)
         run: echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
-      - name: Tests
-        run: python -m pytest -o addopts="" -q -rs
+      - name: Tests (DB and browser tests must run; a missing dependency fails, never skips)
+        env:
+          REQUIRE_DB: "1"
+          REQUIRE_BROWSER: "1"
+        # -rsxX lists every skipped/xfailed/xpassed test in the log; there should be none.
+        run: python -m pytest -o addopts="" -v -rsxX
 
   scrape:
     needs: test
