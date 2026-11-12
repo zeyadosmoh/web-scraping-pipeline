@@ -121,7 +121,7 @@ docker compose up -d      # p6-scraper-pg on 127.0.0.1:5435
 .venv/bin/python -m scraper run-all                      # full catalogue (about 18 min at a 1 s delay)
 .venv/bin/python -m scraper run-all --simulate-changes   # change-tracking demo (simulation report)
 .venv/bin/python -m scraper scrape [--limit N] [--fresh] [--delay S]
-.venv/bin/python -m scraper export [--source live|simulation]
+.venv/bin/python -m scraper export [--source live|simulation] [--run-id RUN_ID]   # default: latest run
 .venv/bin/python -m scraper quotes [--max-pages N]       # JavaScript site through headless Chromium
 ```
 
