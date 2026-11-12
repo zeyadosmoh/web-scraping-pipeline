@@ -1,0 +1,23 @@
+# Local secrets / env
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Run outputs (Excel, CSV, logs, checkpoints)
+outputs/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude Code working notes
+CLAUDE.md

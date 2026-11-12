@@ -1,0 +1,10 @@
+[project]
+name = "web-scraping-pipeline"
+version = "0.1.0"
+description = "Polite scraper for practice sites -> PostgreSQL, Excel and CSV, with change tracking"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
