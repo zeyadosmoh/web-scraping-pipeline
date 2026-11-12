@@ -1,0 +1,180 @@
+<!DOCTYPE html><html lang="en"><head>
+	<meta charset="UTF-8">
+	<title>Quotes to Scrape</title>
+    <link rel="stylesheet" href="/static/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/main.css">
+    
+    
+</head>
+<body>
+    <div class="container">
+        <div class="row header-box">
+            <div class="col-md-8">
+                <h1>
+                    <a href="/" style="text-decoration: none">Quotes to Scrape</a>
+                </h1>
+            </div>
+            <div class="col-md-4">
+                <p>
+                
+                    <a href="/login">Login</a>
+                
+                </p>
+            </div>
+        </div>
+    
+<script src="/static/jquery.js"></script>
+<script>
+    var data = [
+    {
+        "tags": [
+            "truth"
+        ],
+        "author": {
+            "name": "J.K. Rowling",
+            "goodreads_link": "/author/show/1077326.J_K_Rowling",
+            "slug": "J-K-Rowling"
+        },
+        "text": "\u201cThe truth.\" Dumbledore sighed. \"It is a beautiful and terrible thing, and should therefore be treated with great caution.\u201d"
+    },
+    {
+        "tags": [
+            "death",
+            "life"
+        ],
+        "author": {
+            "name": "Jimi Hendrix",
+            "goodreads_link": "/author/show/7268.Jimi_Hendrix",
+            "slug": "Jimi-Hendrix"
+        },
+        "text": "\u201cI'm the one that's got to die when it's time for me to die, so let me live my life the way I want to.\u201d"
+    },
+    {
+        "tags": [
+            "adventure",
+            "love"
+        ],
+        "author": {
+            "name": "J.M. Barrie",
+            "goodreads_link": "/author/show/5255014.J_M_Barrie",
+            "slug": "J-M-Barrie"
+        },
+        "text": "\u201cTo die will be an awfully big adventure.\u201d"
+    },
+    {
+        "tags": [
+            "courage"
+        ],
+        "author": {
+            "name": "E.E. Cummings",
+            "goodreads_link": "/author/show/10547.E_E_Cummings",
+            "slug": "E-E-Cummings"
+        },
+        "text": "\u201cIt takes courage to grow up and become who you really are.\u201d"
+    },
+    {
+        "tags": [
+            "life"
+        ],
+        "author": {
+            "name": "Khaled Hosseini",
+            "goodreads_link": "/author/show/569.Khaled_Hosseini",
+            "slug": "Khaled-Hosseini"
+        },
+        "text": "\u201cBut better to get hurt by the truth than comforted with a lie.\u201d"
+    },
+    {
+        "tags": [
+            "better-life-empathy"
+        ],
+        "author": {
+            "name": "Harper Lee",
+            "goodreads_link": "/author/show/1825.Harper_Lee",
+            "slug": "Harper-Lee"
+        },
+        "text": "\u201cYou never really understand a person until you consider things from his point of view... Until you climb inside of his skin and walk around in it.\u201d"
+    },
+    {
+        "tags": [
+            "books",
+            "children",
+            "difficult",
+            "grown-ups",
+            "write",
+            "writers",
+            "writing"
+        ],
+        "author": {
+            "name": "Madeleine L'Engle",
+            "goodreads_link": "/author/show/106.Madeleine_L_Engle",
+            "slug": "Madeleine-LEngle"
+        },
+        "text": "\u201cYou have to write the book that wants to be written. And if the book will be too difficult for grown-ups, then you write it for children.\u201d"
+    },
+    {
+        "tags": [
+            "truth"
+        ],
+        "author": {
+            "name": "Mark Twain",
+            "goodreads_link": "/author/show/1244.Mark_Twain",
+            "slug": "Mark-Twain"
+        },
+        "text": "\u201cNever tell the truth to people who are not worthy of it.\u201d"
+    },
+    {
+        "tags": [
+            "inspirational"
+        ],
+        "author": {
+            "name": "Dr. Seuss",
+            "goodreads_link": "/author/show/61105.Dr_Seuss",
+            "slug": "Dr-Seuss"
+        },
+        "text": "\u201cA person's a person, no matter how small.\u201d"
+    },
+    {
+        "tags": [
+            "books",
+            "mind"
+        ],
+        "author": {
+            "name": "George R.R. Martin",
+            "goodreads_link": "/author/show/346732.George_R_R_Martin",
+            "slug": "George-R-R-Martin"
+        },
+        "text": "\u201c... a mind needs books as a sword needs a whetstone, if it is to keep its edge.\u201d"
+    }
+];
+    for (var i in data) {
+        var d = data[i];
+        var tags = $.map(d['tags'], function(t) {
+            return "<a class='tag'>" + t + "</a>";
+        }).join(" ");
+        document.write("<div class='quote'><span class='text'>" + d['text'] + "</span><span>by <small class='author'>" + d['author']['name'] + "</small></span><div class='tags'>Tags: " + tags + "</div></div>");
+        }
+</script><div class="quote"><span class="text">“The truth." Dumbledore sighed. "It is a beautiful and terrible thing, and should therefore be treated with great caution.”</span><span>by <small class="author">J.K. Rowling</small></span><div class="tags">Tags: <a class="tag">truth</a></div></div><div class="quote"><span class="text">“I'm the one that's got to die when it's time for me to die, so let me live my life the way I want to.”</span><span>by <small class="author">Jimi Hendrix</small></span><div class="tags">Tags: <a class="tag">death</a> <a class="tag">life</a></div></div><div class="quote"><span class="text">“To die will be an awfully big adventure.”</span><span>by <small class="author">J.M. Barrie</small></span><div class="tags">Tags: <a class="tag">adventure</a> <a class="tag">love</a></div></div><div class="quote"><span class="text">“It takes courage to grow up and become who you really are.”</span><span>by <small class="author">E.E. Cummings</small></span><div class="tags">Tags: <a class="tag">courage</a></div></div><div class="quote"><span class="text">“But better to get hurt by the truth than comforted with a lie.”</span><span>by <small class="author">Khaled Hosseini</small></span><div class="tags">Tags: <a class="tag">life</a></div></div><div class="quote"><span class="text">“You never really understand a person until you consider things from his point of view... Until you climb inside of his skin and walk around in it.”</span><span>by <small class="author">Harper Lee</small></span><div class="tags">Tags: <a class="tag">better-life-empathy</a></div></div><div class="quote"><span class="text">“You have to write the book that wants to be written. And if the book will be too difficult for grown-ups, then you write it for children.”</span><span>by <small class="author">Madeleine L'Engle</small></span><div class="tags">Tags: <a class="tag">books</a> <a class="tag">children</a> <a class="tag">difficult</a> <a class="tag">grown-ups</a> <a class="tag">write</a> <a class="tag">writers</a> <a class="tag">writing</a></div></div><div class="quote"><span class="text">“Never tell the truth to people who are not worthy of it.”</span><span>by <small class="author">Mark Twain</small></span><div class="tags">Tags: <a class="tag">truth</a></div></div><div class="quote"><span class="text">“A person's a person, no matter how small.”</span><span>by <small class="author">Dr. Seuss</small></span><div class="tags">Tags: <a class="tag">inspirational</a></div></div><div class="quote"><span class="text">“... a mind needs books as a sword needs a whetstone, if it is to keep its edge.”</span><span>by <small class="author">George R.R. Martin</small></span><div class="tags">Tags: <a class="tag">books</a> <a class="tag">mind</a></div></div>
+<nav>
+    <ul class="pager">
+        
+        <li class="previous">
+            <a href="/js/page/9/"><span aria-hidden="true">←</span> Previous</a>
+        </li>
+        
+        
+    </ul>
+</nav>
+
+    </div>
+    <footer class="footer">
+        <div class="container">
+            <p class="text-muted">
+                Quotes by: <a href="https://www.goodreads.com/quotes">GoodReads.com</a>
+            </p>
+            <p class="copyright">
+                Made with <span class="zyte">❤</span> by <a class="zyte" href="https://www.zyte.com">Zyte</a>
+            </p>
+        </div>
+    </footer>
+
+</body></html>

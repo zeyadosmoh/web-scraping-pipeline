@@ -1,8 +1,9 @@
-"""Command line: init-db | scrape | export | run-all.
+"""Command line: init-db | scrape | export | run-all | quotes.
 
   python -m scraper scrape [--limit N] [--fresh] [--simulate-changes]
   python -m scraper export [--source live|simulation]
   python -m scraper run-all [--limit N] [--fresh] [--simulate-changes]
+  python -m scraper quotes [--max-pages N]      (JavaScript site, rendered with Playwright)
 
 A full live scrape (no --limit) writes a checkpoint. If it is interrupted, running the same
 command again resumes it. --fresh throws the checkpoint away. --limit runs never checkpoint
@@ -105,6 +106,25 @@ def cmd_export(source: str, settings: Settings, conn) -> list[Path]:
     return [xlsx, latest, *csvs]
 
 
+def cmd_quotes(args, settings: Settings) -> int:
+    from scraper.quotes_js import BrowserFetcher, clean_quotes, scrape_quotes, write_quotes_csv
+    started = utc_now()
+    with BrowserFetcher(user_agent=settings.user_agent,
+                        delay_seconds=args.delay if args.delay is not None else settings.delay_seconds,
+                        timeout_seconds=settings.timeout_seconds, max_retries=settings.max_retries,
+                        backoff_seconds=settings.backoff_seconds) as fetcher:
+        result = scrape_quotes(fetcher, max_pages=args.max_pages)
+    quotes, rejected = clean_quotes(result.raws)
+    paths = write_quotes_csv(quotes, rejected, result.failures, settings.output_dir / "csv" / "quotes")
+    secs = (utc_now() - started).total_seconds()
+    print(f"\n[quotes/js] {result.pages} pages rendered in {secs:.1f} s: {len(result.raws)} scraped, "
+          f"{len(quotes)} valid, {len(rejected)} rejected, {len(result.failures)} failures, "
+          f"{len({q.author for q in quotes})} authors")
+    for path in paths:
+        print(f"  {path}")
+    return 0 if not result.failures else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m scraper", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -117,6 +137,9 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--delay", type=float, help="seconds between requests (default from .env)")
         p.add_argument("--simulate-changes", action="store_true",
                        help="replay the saved two-round simulation instead of the live site")
+    p = sub.add_parser("quotes", help="scrape quotes.toscrape.com/js/ with Playwright (CSV output)")
+    p.add_argument("--max-pages", type=int, help="stop after N pages")
+    p.add_argument("--delay", type=float, help="seconds between page loads (default from .env)")
     p = sub.add_parser("export", help="write Excel + CSV from the database")
     p.add_argument("--source", choices=["live", "simulation"], default="live")
     args = ap.parse_args(argv)
@@ -125,6 +148,10 @@ def main(argv: list[str] | None = None) -> int:
     if getattr(args, "limit", None) is not None and args.limit <= 0:
         ap.error("--limit must be positive")
     log_path = setup_logging(settings.output_dir)
+    if args.cmd == "quotes":
+        rc = cmd_quotes(args, settings)
+        print(f"\nlog: {log_path}")
+        return rc
     conn = db.connect(settings)
     try:
         db.init_schema(conn)
