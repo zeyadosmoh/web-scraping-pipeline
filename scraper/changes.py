@@ -4,6 +4,8 @@ Rules:
 - Each source has its own baseline. A live run is compared only with earlier *live*
   history, and a simulation run only with earlier *simulation* history.
 - A history row is written only for a new product or a changed price or stock.
+- "removed" is flagged ONLY when the run covered the complete catalogue (no --limit, every
+  list page reached, no fetch failures). A partial run never flags removals.
 - Reports include only live rows by default (`select_for_report`).
 """
 from __future__ import annotations
@@ -15,7 +17,7 @@ from typing import Iterable, Literal, Protocol, TypeVar
 
 from scraper.clean import Product, Source
 
-ChangeType = Literal["new", "price", "stock", "price+stock"]
+ChangeType = Literal["new", "price", "stock", "price+stock", "removed"]
 
 
 @dataclass(frozen=True)
@@ -35,15 +37,27 @@ class Change:
     category: str
     change_type: ChangeType
     old_price: Decimal | None
-    new_price: Decimal
+    new_price: Decimal | None  # None for "removed"
     old_stock: int | None
-    new_stock: int
+    new_stock: int | None      # None for "removed"
     source: Source
     detected_at: datetime
 
     @property
     def price_delta(self) -> Decimal | None:
-        return None if self.old_price is None else self.new_price - self.old_price
+        if self.old_price is None or self.new_price is None:
+            return None
+        return self.new_price - self.old_price
+
+
+@dataclass(frozen=True)
+class KnownProduct:
+    """A product the DB currently considers active (removed_at IS NULL) for one source."""
+    upc: str
+    title: str
+    category: str
+    price_gbp: Decimal
+    stock: int
 
 
 Snapshot = dict[str, tuple[Decimal, int]]  # upc -> (price, stock)
@@ -104,9 +118,21 @@ def detect_changes(products: Iterable[Product], previous: Snapshot) -> list[Chan
     return changes
 
 
+def detect_removed(known_active: Iterable[KnownProduct], current_upcs: Iterable[str], *,
+                   complete: bool, source: Source, detected_at: datetime) -> list[Change]:
+    """Products that were active but are missing from a COMPLETE run. A partial run returns []."""
+    if not complete:
+        return []
+    seen = set(current_upcs)
+    return [Change(k.upc, k.title, k.category, "removed", k.price_gbp, None, k.stock, None,
+                   source, detected_at)
+            for k in sorted(known_active, key=lambda k: k.upc) if k.upc not in seen]
+
+
 def history_rows_to_insert(changes: Iterable[Change]) -> list[HistoryRecord]:
-    """One history row per change (new product or changed price/stock). Unchanged rows get none."""
-    return [HistoryRecord(c.upc, c.new_price, c.new_stock, c.source, c.detected_at) for c in changes]
+    """One history row per new product or changed price/stock. Unchanged and removed rows get none."""
+    return [HistoryRecord(c.upc, c.new_price, c.new_stock, c.source, c.detected_at)
+            for c in changes if c.change_type != "removed"]
 
 
 def run_changes(products: Iterable[Product], history: Iterable[HistoryRecord]

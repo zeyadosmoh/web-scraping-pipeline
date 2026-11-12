@@ -93,3 +93,27 @@ def test_changes_report_is_live_only_by_default():
     sim_changes, _ = run_changes([prod("a", "5.00", 5, "simulation")], [hist("a", "10.00", 5, "simulation")])
     combined = live_changes + sim_changes
     assert [c.source for c in select_for_report(combined)] == ["live"]
+
+
+# ---- removed products -----------------------------------------------------------
+from scraper.changes import KnownProduct, detect_removed, history_rows_to_insert  # noqa: E402
+
+KNOWN = [KnownProduct("a", "Book a", "Poetry", D("10.00"), 5),
+         KnownProduct("gone", "Book gone", "History", D("30.00"), 2)]
+
+
+def test_complete_full_run_flags_removed():
+    removed = detect_removed(KNOWN, ["a"], complete=True, source="live", detected_at=T1)
+    assert [(c.upc, c.change_type, c.old_price, c.new_price, c.old_stock, c.new_stock) for c in removed] == [
+        ("gone", "removed", D("30.00"), None, 2, None)]
+    assert removed[0].price_delta is None
+
+
+def test_limit_or_partial_run_never_flags_removed():
+    assert detect_removed(KNOWN, ["a"], complete=False, source="live", detected_at=T1) == []
+    assert detect_removed(KNOWN, [], complete=False, source="live", detected_at=T1) == []
+
+
+def test_removed_changes_do_not_create_history_rows():
+    removed = detect_removed(KNOWN, ["a"], complete=True, source="live", detected_at=T1)
+    assert history_rows_to_insert(removed) == []
