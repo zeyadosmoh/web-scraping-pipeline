@@ -184,6 +184,14 @@ def latest_run(conn, source: Source = "live") -> RunInfo | None:
     return RunInfo(*row) if row else None
 
 
+def get_run(conn, run_id: str, source: Source = "live") -> RunInfo | None:
+    row = conn.execute(
+        """SELECT run_id, source, started_at, finished_at, limit_n, complete, resumed,
+                  rows_scraped, rows_valid, rows_rejected, fetch_failures
+             FROM scrape_runs WHERE run_id = %s AND source = %s""", (run_id, source)).fetchone()
+    return RunInfo(*row) if row else None
+
+
 def fetch_products(conn, source: Source = "live") -> list[ReportProduct]:
     with conn.cursor(row_factory=dict_row) as cur:
         rows = cur.execute(

@@ -148,3 +148,11 @@ def test_failure_mid_store_leaves_no_partial_rows(pg_conn):
     assert pg_conn.info.transaction_status.name == "IDLE"
     db.save_run(pg_conn, replace(run, run_id="live-atomic-ok"), products, changes, history, [])
     assert len(db.fetch_products(pg_conn)) == 8
+
+
+def test_get_run_is_source_scoped(pg_conn):
+    live = scrape(pg_conn, R1, source="live")
+    scrape(pg_conn, R1, source="live", limit=2)  # a later partial run becomes "latest"
+    assert db.latest_run(pg_conn).limit == 2
+    assert db.get_run(pg_conn, live.run.run_id).rows_valid == 8
+    assert db.get_run(pg_conn, live.run.run_id, "simulation") is None

@@ -1,7 +1,7 @@
 """Command line: init-db | scrape | export | run-all | quotes.
 
   python -m scraper scrape [--limit N] [--fresh] [--simulate-changes]
-  python -m scraper export [--source live|simulation]
+  python -m scraper export [--source live|simulation] [--run-id RUN_ID]
   python -m scraper run-all [--limit N] [--fresh] [--simulate-changes]
   python -m scraper quotes [--max-pages N]      (JavaScript site, rendered with Playwright)
 
@@ -84,16 +84,17 @@ def cmd_scrape(args, settings: Settings, conn) -> list[RunOutcome]:
     return outcomes
 
 
-def build_report(conn, source) -> ReportData:
-    run = db.latest_run(conn, source)
+def build_report(conn, source, run_id: str | None = None) -> ReportData:
+    """Report for the latest run of `source`, or for a specific run id of that source."""
+    run = db.get_run(conn, run_id, source) if run_id else db.latest_run(conn, source)
     if run is None:
-        raise SystemExit(f"no {source} runs in the database yet: run `scrape` first")
+        raise SystemExit(f"no {source} run {run_id or ''} in the database: run `scrape` first".replace("  ", " "))
     return ReportData(source, run, db.fetch_products(conn, source), db.fetch_changes(conn, run.run_id, source),
                       db.fetch_log(conn, run.run_id, source), generated_at=utc_now())
 
 
-def cmd_export(source: str, settings: Settings, conn) -> list[Path]:
-    data = build_report(conn, source)
+def cmd_export(source: str, settings: Settings, conn, run_id: str | None = None) -> list[Path]:
+    data = build_report(conn, source, run_id)
     out = settings.output_dir
     stamp = data.run.finished_at.strftime("%Y%m%dT%H%M%SZ")
     xlsx = write_excel(data, out / "reports" / f"report_{source}_{stamp}.xlsx", settings.report_timezone)
@@ -142,6 +143,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--delay", type=float, help="seconds between page loads (default from .env)")
     p = sub.add_parser("export", help="write Excel + CSV from the database")
     p.add_argument("--source", choices=["live", "simulation"], default="live")
+    p.add_argument("--run-id", help="export this run instead of the latest one (must match --source)")
     args = ap.parse_args(argv)
 
     settings = load_settings()
@@ -158,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.cmd == "init-db":
             print("schema ready")
         elif args.cmd == "export":
-            cmd_export(args.source, settings, conn)
+            cmd_export(args.source, settings, conn, args.run_id)
         else:
             try:
                 cmd_scrape(args, settings, conn)
