@@ -29,3 +29,30 @@ def fixture_html(fixture_bytes):
     def _read(name: str) -> str:
         return fixture_bytes(name).decode("utf-8")
     return _read
+
+
+# ---- PostgreSQL (DB tests skip when the P6 container is not reachable) ----------
+TEST_DB = "scraper_test"
+
+
+@pytest.fixture
+def pg_conn():
+    import psycopg
+    from scraper.config import load_settings
+    from scraper import db
+
+    settings = load_settings()
+    try:
+        admin = db.connect(settings)
+    except Exception as exc:  # noqa: BLE001
+        pytest.skip(f"PostgreSQL not reachable: {exc}")
+    admin.autocommit = True
+    if not admin.execute("SELECT 1 FROM pg_database WHERE datname = %s", (TEST_DB,)).fetchone():
+        admin.execute(f'CREATE DATABASE "{TEST_DB}"')
+    admin.close()
+    conn = db.connect(settings, dbname=TEST_DB)
+    with conn.transaction():
+        conn.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+    db.init_schema(conn)
+    yield conn
+    conn.close()
