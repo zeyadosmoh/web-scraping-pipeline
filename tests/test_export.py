@@ -136,3 +136,42 @@ def test_csv_outputs(tmp_path):
     assert changes[1]["change_type"] == "removed" and changes[1]["new_price_gbp"] == ""
     log = list(csv.DictReader(paths[2].open(encoding="utf-8-sig")))
     assert log[0]["value"] == "£--.--"
+
+
+# ---- exact cell positions per change type; header widths ---------------------------
+from scraper.export import header_width  # noqa: E402
+
+
+def test_change_rows_exact_cell_positions(tmp_path):
+    chg = [
+        Change("n1", "New book", "Poetry", "new", None, D("52.15"), None, 19, "live", T1),
+        Change("r1", "Gone", "History", "removed", D("33.34"), None, 19, None, "live", T1),
+        Change("p1", "Pricey", "Fiction", "price", D("53.74"), D("58.00"), 20, 20, "live", T1),
+        Change("s1", "Stocky", "Fiction", "stock", D("50.10"), D("50.10"), 20, 0, "live", T1),
+        Change("b1", "Both", "History", "price+stock", D("54.23"), D("49.99"), 20, 7, "live", T1),
+    ]
+    d = data("live")
+    d.changes = chg
+    ws = load_workbook(write_excel(d, tmp_path / "c.xlsx"))["Changes since last run"]
+    # Columns: A Change, B UPC, ..., E Old price, F New price, G Price change, H Old stock, I New stock
+    assert [ws.cell(1, c).value for c in (5, 6, 7, 8, 9)] == [
+        "Old price (GBP)", "New price (GBP)", "Price change (GBP)", "Old stock", "New stock"]
+    rows = {ws.cell(r, 1).value: [ws.cell(r, c).value for c in (5, 6, 7, 8, 9)] for r in range(2, 7)}
+    assert rows["new"] == [None, 52.15, None, None, 19]          # old side blank, new side filled
+    assert rows["removed"] == [33.34, None, None, 19, None]      # new side blank
+    assert rows["price"] == [53.74, 58, 4.26, 20, 20]
+    assert rows["stock"] == [50.1, 50.1, 0, 20, 0]
+    assert rows["price+stock"] == [54.23, 49.99, -4.24, 20, 7]
+    assert ws["H2"].coordinate == "H2" and ws["I2"].value == 19   # "new" stock lands under New stock
+
+
+def test_every_column_is_at_least_as_wide_as_its_header(live_wb, sim_wb):
+    from openpyxl.utils import get_column_letter
+    for wb, header_row in ((live_wb, 1), (sim_wb, 2)):
+        for ws in wb.worksheets:
+            for c in range(1, ws.max_column + 1):
+                text = ws.cell(header_row, c).value
+                if not text:
+                    continue
+                width = ws.column_dimensions[get_column_letter(c)].width
+                assert width >= header_width(str(text)) > len(str(text)), (ws.title, text, width)
