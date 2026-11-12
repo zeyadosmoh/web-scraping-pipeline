@@ -12,6 +12,7 @@ CSV is UTF-8 with BOM (so Excel opens it correctly), with ISO-8601 UTC times.
 from __future__ import annotations
 
 import csv
+import math
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -43,6 +44,11 @@ CHANGE_FILLS = {
     "stock": PatternFill("solid", fgColor="DDEBF7"),
     "price+stock": PatternFill("solid", fgColor="FCE4D6"),
 }
+
+
+def header_width(text: str) -> int:
+    """Minimum column width so a bold header plus its autofilter button is never cut off."""
+    return math.ceil(len(text) * 1.15) + 4
 
 
 def tz_label(tz: str) -> str:
@@ -97,7 +103,8 @@ class _Sheet:
             else:
                 lengths = [len(str(self.ws.cell(r, c).value or "")) for r in range(self.header_row, last + 1)]
                 w = min(max(lengths, default=8) + 2, 60)
-            self.ws.column_dimensions[get_column_letter(c)].width = max(w, 10)
+            header = str(self.ws.cell(self.header_row, c).value or "")
+            self.ws.column_dimensions[get_column_letter(c)].width = max(w, 10, header_width(header))
 
 
 def _local(ts: datetime | None, tz: str) -> datetime | None:
