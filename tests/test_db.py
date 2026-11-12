@@ -112,3 +112,39 @@ def test_run_is_committed_and_visible_from_a_new_connection(pg_conn):
         assert db.latest_run(other).rows_valid == 8
     finally:
         other.close()
+
+
+def test_failure_mid_store_leaves_no_partial_rows(pg_conn):
+    """save_run is ONE transaction: if the last statement fails, nothing from the run survives."""
+    from dataclasses import replace
+    from scraper.config import load_settings
+    from scraper.crawl import crawl
+    from scraper.clean import clean_books
+    from scraper.changes import run_changes
+    from scraper.report import LogRow, RunInfo
+    from scraper.timeutil import utc_now
+    from tests.conftest import TEST_DB
+    import psycopg
+
+    raws = crawl(FixtureFetcher(R1), "https://books.toscrape.com/catalogue/page-1.html",
+                 limit=None, checkpoint=Checkpoint.load(None)).raws
+    now = utc_now()
+    products, _ = clean_books(raws, "live", now)
+    changes, history = run_changes(products, [])
+    run = RunInfo("live-atomic-test", "live", now, now, None, True, False, 8, 8, 0, 0)
+    # import_log is written LAST; a NULL reason violates NOT NULL there, after the run row,
+    # products, history and change_log statements have already been executed.
+    bad_log = [LogRow(now, "https://x", None, "price", "x", None, "live")]
+    with pytest.raises(psycopg.errors.NotNullViolation):
+        db.save_run(pg_conn, run, products, changes, history, bad_log)
+
+    other = db.connect(load_settings(), dbname=TEST_DB)
+    try:
+        for table in ("scrape_runs", "products", "price_stock_history", "change_log", "import_log"):
+            assert other.execute(f"SELECT count(*) FROM {table}").fetchone()[0] == 0, table
+    finally:
+        other.close()
+    # and the same connection is still usable afterwards
+    assert pg_conn.info.transaction_status.name == "IDLE"
+    db.save_run(pg_conn, replace(run, run_id="live-atomic-ok"), products, changes, history, [])
+    assert len(db.fetch_products(pg_conn)) == 8

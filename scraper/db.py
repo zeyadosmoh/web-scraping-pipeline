@@ -128,6 +128,8 @@ def load_active_products(conn, source: Source = "live") -> list[KnownProduct]:
 # ---- write one run atomically --------------------------------------------------
 def save_run(conn, run: RunInfo, products: Iterable[Product], changes: Iterable[Change],
              history: Iterable[HistoryRecord], log: Iterable[LogRow]) -> None:
+    """Store a whole run in ONE explicit transaction (real BEGIN/COMMIT on the autocommit
+    connection): either every row of the run is committed, or none is."""
     products, changes, history, log = list(products), list(changes), list(history), list(log)
     for item in [*products, *changes, *history, *log]:
         if item.source != run.source:
