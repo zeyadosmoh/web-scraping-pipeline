@@ -55,8 +55,8 @@ jobs:
           --health-cmd "pg_isready -U scraper -d scraper"
           --health-interval 5s --health-timeout 3s --health-retries 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
           cache: pip
@@ -92,8 +92,8 @@ jobs:
     env:
       SCRAPER_DELAY_SECONDS: "1.0"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
           cache: pip
@@ -120,7 +120,7 @@ jobs:
         run: python -m scraper quotes
       - name: Upload Excel, CSV and logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: scrape-report-${{ github.run_number }}
           path: |
