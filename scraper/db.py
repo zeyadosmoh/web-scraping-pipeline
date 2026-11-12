@@ -93,10 +93,14 @@ CREATE TABLE IF NOT EXISTS import_log (
 def connect(settings: Settings, dbname: str | None = None) -> psycopg.Connection:
     if not settings.pg_password:
         raise RuntimeError("POSTGRES_PASSWORD is not set (put it in .env)")
+    # autocommit=True is required: with psycopg 3 in non-autocommit mode, the first read opens an
+    # implicit transaction and `conn.transaction()` then only creates a SAVEPOINT, so nothing is
+    # committed and closing the connection silently rolls the whole run back.
+    # With autocommit, every `with conn.transaction():` block is a real BEGIN ... COMMIT.
     conn = psycopg.connect(host=settings.pg_host, port=settings.pg_port, dbname=dbname or settings.pg_db,
-                           user=settings.pg_user, password=settings.pg_password, connect_timeout=5)
+                           user=settings.pg_user, password=settings.pg_password, connect_timeout=5,
+                           autocommit=True)
     conn.execute("SET TIME ZONE 'UTC'")
-    conn.commit()
     return conn
 
 

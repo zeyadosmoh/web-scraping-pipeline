@@ -97,3 +97,18 @@ def test_save_run_rejects_mixed_sources(pg_conn):
     bad_run = replace(out.run, run_id="x", source="live")
     with pytest.raises(ValueError, match="simulation row"):
         db.save_run(pg_conn, bad_run, out.products, [], [], [])
+
+
+def test_run_is_committed_and_visible_from_a_new_connection(pg_conn):
+    """Regression: a run must be really committed, not just visible inside its own transaction."""
+    from scraper.config import load_settings
+    from tests.conftest import TEST_DB
+    scrape(pg_conn, R1)
+    pg_conn.close()  # closing must not roll anything back
+    other = db.connect(load_settings(), dbname=TEST_DB)
+    try:
+        assert other.info.transaction_status.name == "IDLE"
+        assert len(db.fetch_products(other)) == 8
+        assert db.latest_run(other).rows_valid == 8
+    finally:
+        other.close()
