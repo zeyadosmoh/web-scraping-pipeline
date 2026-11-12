@@ -1,0 +1,10 @@
+# P6 web-scraping-pipeline: example crontab (install with `crontab -e`).
+# Cron uses the SYSTEM timezone (this WSL: Africa/Cairo), so 05:00 below = 05:00 Cairo time.
+# The app itself always stores UTC.
+# Requirements: cron service running (`sudo service cron start` if WSL has no systemd),
+# Docker Desktop running on Windows.
+#
+# m  h  dom mon dow  command
+  0  5  *   *   1    $HOME/projects/web-scraping-pipeline/deploy/run_scheduled.sh >> $HOME/projects/web-scraping-pipeline/outputs/logs/cron.log 2>&1
+# Daily quick check (20 books):
+# 30 6  *   *   *    $HOME/projects/web-scraping-pipeline/deploy/run_scheduled.sh --limit 20 >> $HOME/projects/web-scraping-pipeline/outputs/logs/cron.log 2>&1

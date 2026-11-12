@@ -1,0 +1,18 @@
+# User unit. Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/systemd/p6-scraper.{service,timer} ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now p6-scraper.timer
+# Needs systemd enabled in WSL (/etc/wsl.conf: [boot] systemd=true).
+[Unit]
+Description=P6 web scraping pipeline (books.toscrape.com -> PostgreSQL, Excel, CSV)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/projects/web-scraping-pipeline
+ExecStart=%h/projects/web-scraping-pipeline/deploy/run_scheduled.sh
+# exit 2 = run interrupted, checkpoint kept; next run resumes. Not a unit failure.
+SuccessExitStatus=2
+TimeoutStartSec=90min
+Nice=10
